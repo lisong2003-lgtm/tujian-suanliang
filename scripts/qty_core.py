@@ -46,7 +46,7 @@ def base_script(name: str) -> Path:
     """定位 cad-file-reader 入口；缺失时给出可执行的处理建议。"""
     p = cad_base() / "scripts" / name
     if not p.exists():
-        raise SystemExit(f"底座 cad-file-reader 缺少 {name}；请升级到 0.18.0+ 或设 CAD_SKILL_DIR")
+        raise SystemExit(f"底座 cad-file-reader 缺少 {name}；请升级到 0.25.0+ 或设 CAD_SKILL_DIR")
     return p
 
 
@@ -87,13 +87,14 @@ def cad_reader_version() -> str:
 
 
 def run_measurement_candidates(out: Path) -> bool:
-    """调用 cad-file-reader 0.18+ 的测量候选层；只作复核证据，不参与本技能算量。"""
+    """调用 cad-file-reader 0.25+ 的测量候选层；只作复核证据，不参与本技能算量。"""
     detail = out / "detail.json"
     if not detail.exists():
         return False
     measure_out = out / "measurement-candidates"
     target = measure_out / "cad-measurement-candidates.json"
     if target.exists():
+        validate_measurement_candidates(out)
         return True
     try:
         script = base_script("cad_measure.sh")
@@ -108,7 +109,61 @@ def run_measurement_candidates(out: Path) -> bool:
         log("[测量] 底座测量候选失败（不阻断出量）：" + (r.stderr.strip().splitlines()[-1][:180] if r.stderr.strip() else f"exit={r.returncode}"))
         return False
     log("[测量] 已生成 cad-file-reader 长度/面积/体积测量候选，仅供复核")
+    validate_measurement_candidates(out)
     return True
+
+
+def validate_measurement_candidates(out: Path) -> bool:
+    """用 cad-file-reader cad_validate.sh 校验测量候选；失败不阻断出量，但写入校验状态。"""
+    target = out / "measurement-candidates" / "cad-measurement-candidates.json"
+    if not target.exists():
+        return False
+    try:
+        script = base_script("cad_validate.sh")
+    except SystemExit as exc:
+        log(f"[测量校验] 底座缺少校验入口（不阻断出量）：{exc}")
+        return False
+    r = subprocess.run([str(script), str(target)], capture_output=True, text=True)
+    errors = []
+    for ln in r.stdout.splitlines():
+        if not ln.strip():
+            continue
+        try:
+            rec = json.loads(ln)
+            errors.extend(rec.get("errors") or [])
+        except Exception:
+            continue
+    ok = r.returncode == 0 and not errors
+    (out / "measurement-candidates" / "cad-validate.json").write_text(
+        json.dumps({"ok": ok, "errors": errors[:20], "exit": r.returncode},
+                   ensure_ascii=False, indent=1), encoding="utf-8")
+    if not ok:
+        log("[测量校验] cad-file-reader 测量候选校验未通过（不阻断出量）：" + "；".join(errors[:3]))
+    return ok
+
+
+def run_compare_baseline(out: Path, baseline: str) -> bool:
+    """用 cad-file-reader cad_compare.sh 对比基线/当前图纸变化候选；不阻断出量，只提示重算范围。"""
+    detail = out / "detail.json"
+    if not detail.exists() or not baseline:
+        return False
+    try:
+        script = base_script("cad_compare.sh")
+    except SystemExit as exc:
+        log(f"[图纸对比] 底座缺少对比入口（不阻断出量）：{exc}")
+        return False
+    dst = out / "cad-compare"
+    dst.mkdir(parents=True, exist_ok=True)
+    r = subprocess.run(
+        [str(script), baseline, str(detail), "--out-dir", str(dst), "--tolerance", "1.0", "--max-changes", "5000"],
+        capture_output=True, text=True,
+    )
+    ok = r.returncode == 0
+    if not ok:
+        log("[图纸对比] cad_compare 失败（不阻断出量）：" + (r.stderr.strip().splitlines()[-1][:180] if r.stderr.strip() else "exit=%s" % r.returncode))
+    else:
+        log("[图纸对比] 已生成基线→当前图纸变化候选：%s（建议按变化清单决定重算范围）" % dst)
+    return ok
 
 
 def run_normative(out: Path) -> bool:
@@ -136,7 +191,7 @@ def run_normative(out: Path) -> bool:
 
 
 def build_index(dwg: Path, out: Path, with_geom: bool, keep_detail: bool = False,
-                with_normative: bool = True) -> Path:
+                with_normative: bool = True, compare_baseline: str = "") -> Path:
     db = out / "index.sqlite"
     norm_file = out / "normative.json"
     if db.exists():
@@ -150,6 +205,8 @@ def build_index(dwg: Path, out: Path, with_geom: bool, keep_detail: bool = False
                 built["normative"] = run_normative(out)
             if (out / "detail.json").exists() and not (out / "measurement-candidates" / "cad-measurement-candidates.json").exists():
                 built["measurement_candidates"] = run_measurement_candidates(out)
+            elif (out / "measurement-candidates" / "cad-measurement-candidates.json").exists():
+                validate_measurement_candidates(out)
             return db
         log("[索引] 缓存不可用（缺几何线段或版本变了），重建…")
         db.unlink(missing_ok=True)
@@ -170,6 +227,8 @@ def build_index(dwg: Path, out: Path, with_geom: bool, keep_detail: bool = False
     if with_normative and not norm_file.exists():
         has_norm = run_normative(out)
     has_measure = run_measurement_candidates(out)
+    if compare_baseline:
+        run_compare_baseline(out, compare_baseline)
     db = fill_db(out, db, with_geom, has_norm, has_measure)
     if not keep_detail:                       # 明细 JSON 是解图中间产物，索引建好就没用了
         det = out / "detail.json"
@@ -220,7 +279,12 @@ def fill_db(out: Path, db: Path, with_geom: bool, has_norm: bool = False, has_me
     con.execute("INSERT OR REPLACE INTO meta VALUES('built',?)",
                 (json.dumps({"secs": round(time.time() - t0, 1), "version": CACHE_VERSION,
                              "geom": bool(with_geom and sids), "texts": len(rows), "segs": len(sids),
-                             "normative": has_norm, "measurement_candidates": has_measure}),))
+                             "normative": has_norm, "measurement_candidates": has_measure,
+                             "cad_reader_version": cad_reader_version(),
+                             "measurement_validated": bool(
+                                 (out / "measurement-candidates" / "cad-validate.json").exists()
+                                 and json.loads((out / "measurement-candidates" / "cad-validate.json").read_text(encoding="utf-8")).get("ok"))
+                             }),))
     con.commit()
     built = json.loads(con.execute("SELECT v FROM meta WHERE k='built'").fetchone()[0])
     con.close()
@@ -1334,7 +1398,8 @@ def write_out(rows, plan, missing, ctx, out_base: Path, fmt="all"):
 def cmd_index(a):
     dwg = Path(a.dwg).expanduser().resolve()
     out = cache_dir(dwg, a.cache_dir)
-    db = build_index(dwg, out, a.with_geom, a.keep_detail)
+    db = build_index(dwg, out, a.with_geom, a.keep_detail,
+                     compare_baseline=getattr(a, "compare_baseline", ""))
     print(json.dumps({"ok": True, "db": str(db)}, ensure_ascii=False))
     return 0
 
@@ -1479,6 +1544,8 @@ def main():
     p = sub.add_parser("index"); p.add_argument("dwg"); p.add_argument("--cache-dir")
     p.add_argument("--with-geom", dest="with_geom", action="store_true", default=True)
     p.add_argument("--no-geom", dest="with_geom", action="store_false")
+    p.add_argument("--compare-baseline", dest="compare_baseline", default="",
+                   help="基线 detail.json；给出后自动用 cad_compare.sh 输出图纸变化候选，不阻断出量")
     p.set_defaults(func=cmd_index)
     p.add_argument("--keep-detail", dest="keep_detail", action="store_true",
                    help="保留解图明细 JSON（占空间大，重建索引时才用得上）")
