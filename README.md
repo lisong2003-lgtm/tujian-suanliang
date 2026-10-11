@@ -1,5 +1,8 @@
 # 土建算量（tujian-suanliang）
 
+> 📦 **SkillHub 安装**：`skillhub install tujian-suanliang`　|　仓库：[lisong2003-lgtm/tujian-suanliang](https://github.com/lisong2003-lgtm/tujian-suanliang)
+
+
 给不会用广联达的施工员/技术员：**丢一张结构施工图，几分钟内拿到报物资计划要的量**。
 
 - 按楼层（给图名就出那层）：梁、板、柱、墙的混凝土净量、订货量（含损耗）、标号分档、钢筋吨数带
