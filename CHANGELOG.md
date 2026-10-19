@@ -1,4 +1,42 @@
 # 更新记录
+## v0.9.20 — 2026-10-19（三平台发布对齐）
+
+- 发布对齐：以本机为规范源同步三平台；含 qto-project/v1 联动契约与 zero-config 底座默认仓库。
+## P1 联动（2026-10-19，文档说明）
+
+- 新增与 `cad-file-reader` 的目录级联动说明：识别放 `<项目目录>/识别/<slug>/`，量算输出写 `<项目目录>/算量/<slug>/`，可用底座 `scripts/qto_p1_link.py` 登记；不改算法与口径。
+
+
+## 0.9.14 — 2026-10-18（第三批：钢构 8.20 深化真图回归）
+
+- 钢构深化图-CAD版 3 张回归：桁架板、D 区 B1-16 交 A-K 深化图 2/2 通过（members 165/1522，D 区含 rebars 94）。
+- **审核图 9.5 解析器上限已解除**：本机集成 LibreDWG fallback（`CAD_DWG_DXF_FALLBACK=1` / `--dwg-dxf-fallback`）后，原 DWG 直读完成，结构候选 members=4925、rebars=47、nodes=16、grids=59985；明细落 `work/real_regression/batch_results/shangwu-suanliang/cad-file-reader-ts-steel95-fixed.report.json`。
+- **钢构平面图回归口径补正**：钢构平面图合格判据用 `members`/`grids`/`nodes`，不要用 `structural_geometry`（该字段是几何段计数，钢构管线/部件图层不产出，恒为 0）；`cad-file-reader-ts-steel-1.json` 的 ts_steel_2 已改 expect=members。
+- 明细另落 `work/real_regression/batch_results/shangwu-suanliang/cad-file-reader-ts-steel-1.report.json`。
+## 0.9.13 — 2026-10-18（第二期真图回归：32 例 + 6 替代版本补齐）
+
+- 回归 32 例：26 例原图通过；6 例原图 DWG 被 ezdwg 拒绝解析，全部在本机找到同项目可解析版本并 6/6 通过（会展PM构造柱、墙柱基础ok、20250519 A-人防建施、人防布局(平时答复图审)、楼梯墙身坡道ok）。
+- 原缺口按内容覆盖口径达 32/32；自检 `run_preflight.sh` 320/320 通过，发布合规扫描 problems=0。
+- 遗留：原始 6 个 DWG 文件本身（构造柱布置/墙柱基础/坡道/楼梯/A-人防建施/A-人防平时）因 ezdwg 不支持其存储格式无法直读，回归证据来自同项目替代版本。
+
+## 0.9.12 — 2026-10-16（人防结构专项复核清单）
+- 新增 `scripts/cad_civil_defense_checklist.py`（schema `cad-civil-defense-checklist/v1`）：对结构图做人防专项复核清单，7 项检查（保护单元/抗力等级、门框墙/封堵、临空墙/防护墙、口部/密闭通道、人防顶底板、顶梁/墙柱/基础、MEP 接口），输出证据坐标与复核原因。
+- 边界：`formal_ready=false`，只做识图与复核清单，不输出人防结构工程量。
+- 新增单测 `scripts/tests/test_cad_civil_defense_checklist.py`。
+- 真图验证：项目酒店人防结构图 `国贸酒店人防结构.dwg` 作 detail 扫描，text_records=12154，7/7 项 evidence_found；命中人防术语 165 条、口部术语 19 条、MEP 术语 3 条（示例：`核6常6级`、`门框墙内所有预埋件…`、`带*墙体为人防防护墙体兼平时剪力墙`、`人防顶梁平法施工图`、`防爆波电缆井`）。
+- 自测：`run_preflight.sh` 全量 320 项通过，发布合规扫描 problems=0。
+
+## 0.9.11 — 2026-10-12（真图回归纳入发布预检）
+- 新增 `scripts/run_preflight.sh`：全量自测 → 发布合规扫描 → 真图回归（复用 cad 底座，--manifest 强制），发布前统一入口。
+- `ensure_base.sh` 保留 SHA-256 完整性校验；默认底座版本 cad-file-reader 0.28.5。
+
+## 0.9.6 — 2026-10-12（底座自动安装加固）
+
+- `ensure_base.sh` 增加 cad-file-reader 完整包 SHA-256 校验（从同 Release 下载 SHA256SUMS），校验失败拒绝安装与执行，避免“下载即信任”。
+- 自动安装底座前校验包内 manifest 版本与期望一致；默认底座版本升至 0.28.1。
+- 平台安全扫描合规：本轮起自动安装底座具备可验证完整性与版本固定。
+
+
 
 ## 0.9.0 — 2026-10-05
 

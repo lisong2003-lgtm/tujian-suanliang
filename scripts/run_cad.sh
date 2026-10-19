@@ -11,12 +11,12 @@ for candidate in "${CODEX_PYTHON:-}" "$HOME"/.cache/codex-runtimes/codex-primary
   fi
 done
 [[ -z "${PYTHON_BIN}" ]] && { echo "需要 Python 3.10+：设 CODEX_PYTHON 指向 python3" >&2; exit 1; }
-if [[ -z "${CAD_SKILL_DIR:-}" ]]; then
-  for d in "$HOME/.codex/skills/cad-file-reader" "$HOME/.claude/skills/cad-file-reader"; do
-    [[ -d "$d" ]] && { CAD_SKILL_DIR="$d"; break; }
-  done
+BASE_VAL="$("$SKILL_DIR/scripts/ensure_base.sh")" || exit $?
+if [ -z "$BASE_VAL" ]; then
+  echo "[土建算量] 降级模式：未能获取识图底座 cad-file-reader；请提供已有扫描/测量 JSON 或设置 CAD_SKILL_DIR。" >&2
+  exit 2
 fi
-[[ -z "${CAD_SKILL_DIR:-}" ]] && { echo "找不到底座技能 cad-file-reader：设 CAD_SKILL_DIR 指向它" >&2; exit 2; }
+CAD_SKILL_DIR="$BASE_VAL"
 export CAD_SKILL_DIR
 : "${CAD_MEM_LIMIT_MB:=4096}"; export CAD_MEM_LIMIT_MB
 export PYTHONPATH="${SKILL_DIR}/scripts:${CAD_SKILL_DIR}/scripts:${CAD_SKILL_DIR}/vendor${PYTHONPATH:+:${PYTHONPATH}}"
