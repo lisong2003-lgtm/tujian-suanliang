@@ -62,33 +62,36 @@ def read_indicator(path: Path, floor: str) -> tuple[float, dict]:
         raise SystemExit(
             "需要 openpyxl 读取指标报表，请改用 Codex 主运行时的 python3") from exc
     book = openpyxl.load_workbook(str(path), data_only=True, read_only=True)
-    type_sheet = next((name for name in book.sheetnames
-                       if "构件类型" in name and "混凝土" in name), None)
-    part_sheet = next((name for name in book.sheetnames
-                       if "部位楼层" in name and "混凝土" in name), None)
-    if not type_sheet or not part_sheet:
-        raise SystemExit("指标报表缺少混凝土构件类型表或部位楼层表")
-    schedule: dict[tuple, float] = {}
-    category = subclass = ""
-    for row in book[type_sheet].iter_rows(values_only=True):
-        depth = _indent(row[0])
-        title = _text(row[0]).strip()
-        if not title or "名称" in title or "总量" in title:
-            continue
-        if depth == 0:
-            category, subclass = title, ""
-        elif depth <= 2:
-            subclass = title
-        elif depth == 4 and title == floor:
-            schedule[(category, subclass)] = _round(row[1])
-    total = 0.0
-    for row in book[part_sheet].iter_rows(values_only=True):
-        if _text(row[0]).strip() == floor:
-            total = _round(row[1])
-            break
-    if not schedule or not total:
-        raise SystemExit("指标报表里没有 %s 的混凝土数据" % floor)
-    return total, schedule
+    try:
+        type_sheet = next((name for name in book.sheetnames
+                           if "构件类型" in name and "混凝土" in name), None)
+        part_sheet = next((name for name in book.sheetnames
+                           if "部位楼层" in name and "混凝土" in name), None)
+        if not type_sheet or not part_sheet:
+            raise SystemExit("指标报表缺少混凝土构件类型表或部位楼层表")
+        schedule: dict[tuple, float] = {}
+        category = subclass = ""
+        for row in book[type_sheet].iter_rows(values_only=True):
+            depth = _indent(row[0])
+            title = _text(row[0]).strip()
+            if not title or "名称" in title or "总量" in title:
+                continue
+            if depth == 0:
+                category, subclass = title, ""
+            elif depth <= 2:
+                subclass = title
+            elif depth == 4 and title == floor:
+                schedule[(category, subclass)] = _round(row[1])
+        total = 0.0
+        for row in book[part_sheet].iter_rows(values_only=True):
+            if _text(row[0]).strip() == floor:
+                total = _round(row[1])
+                break
+        if not schedule or not total:
+            raise SystemExit("指标报表里没有 %s 的混凝土数据" % floor)
+        return total, schedule
+    finally:
+        book.close()
 
 
 def read_component_export(payload: dict, floor: str) -> tuple:
