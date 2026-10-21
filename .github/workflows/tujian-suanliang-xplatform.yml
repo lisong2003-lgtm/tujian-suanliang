@@ -31,9 +31,13 @@ jobs:
         run: |
           python -m pip install --disable-pip-version-check --no-input -q openpyxl
           git clone --depth 1 --branch v0.32.1 https://github.com/lisong2003-lgtm/cad-file-reader ../cad-file-reader
+          # 强制用本平台 PyPI 二进制重建 vendor（Release 包内自带 macOS _core.abi3.so，跨平台不可用）
+          python ../cad-file-reader/scripts/setup.py --force
 
       - name: unittest discover（320 tests, 含真实 CLI 中文 JSON）
         shell: bash
+        env:
+          CAD_SKILL_DIR: ../cad-file-reader
         run: |
           python - <<'PY'
           import sys
@@ -44,7 +48,10 @@ jobs:
           sys.path.insert(0, str(base))
           sys.path.insert(0, str(Path('../cad-file-reader/scripts').resolve()))
           import unittest
-          unittest.main(argv=['x', 'discover', '-s', 'scripts/tests'])
+          suite = unittest.defaultTestLoader.discover('scripts/tests')
+          result = unittest.TextTestRunner(verbosity=1).run(suite)
+          if not result.wasSuccessful():
+              raise SystemExit(1)
           PY
           python scripts/smoke_utf8_json.py
       - name: i18n 英文 smoke（--lang en JSON 可读）
