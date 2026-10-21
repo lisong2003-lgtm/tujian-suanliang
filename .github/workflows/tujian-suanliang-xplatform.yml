@@ -32,6 +32,15 @@ jobs:
           python -m pip install --disable-pip-version-check --no-input -q openpyxl
           git clone --depth 1 --branch v0.32.1 https://github.com/lisong2003-lgtm/cad-file-reader ../cad-file-reader
           # 强制用本平台 PyPI 二进制重建 vendor（Release 包内自带 macOS _core.abi3.so，跨平台不可用）
+          # 先清掉仓库自带的不兼容 vendor，setup.py --force 只重装并不清旧文件
+          python - <<'PY2'
+from pathlib import Path
+import shutil
+v = Path('../cad-file-reader/vendor')
+if v.exists():
+    shutil.rmtree(v, ignore_errors=True)
+    print('cleared cad-file-reader/vendor')
+PY2
           python ../cad-file-reader/scripts/setup.py --force
 
       - name: unittest discover（320 tests, 含真实 CLI 中文 JSON）
