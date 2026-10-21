@@ -6,7 +6,19 @@
 一段对角线既挂复核洞口又挂已扣洞口；洞口格与节点格在平面里压在一起，板扣一次梁再扣一次。
 本脚本只做归属与对平，不改任何构件原值，也不改写候选合计。
 """
+
+
+
 from __future__ import annotations
+
+try:
+    import os as _boot_os, sys as _boot_sys
+    _boot_sys.path.insert(0, _boot_os.path.dirname(_boot_os.path.abspath(__file__)))
+    import pyboot as _boot_pyboot
+    _boot_pyboot.ensure_utf8_io()
+except Exception:
+    pass
+
 from cad_common import to_number as _number, to_text as _text  # noqa: E402,F401
 
 import argparse

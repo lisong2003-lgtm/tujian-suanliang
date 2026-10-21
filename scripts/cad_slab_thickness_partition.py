@@ -7,7 +7,19 @@
 整块取一个厚度就会与图例冲突。本脚本用 100 mm 网格把面板切成子面域，
 逐块按"直接标注 > 图例填充 > 说明默认"定档，并保证分档面积与面板面积对平。
 """
+
+
+
 from __future__ import annotations
+
+try:
+    import os as _boot_os, sys as _boot_sys
+    _boot_sys.path.insert(0, _boot_os.path.dirname(_boot_os.path.abspath(__file__)))
+    import pyboot as _boot_pyboot
+    _boot_pyboot.ensure_utf8_io()
+except Exception:
+    pass
+
 from cad_common import to_number as _number, round_number as _round, to_text as _text  # noqa: E402,F401
 
 import argparse

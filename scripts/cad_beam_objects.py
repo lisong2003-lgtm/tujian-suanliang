@@ -14,7 +14,19 @@ cad_beam_objects.py - 从展开后的梁边界图层生成可复核的梁对象�
 再与图中集中标注位置绑定，输出每根梁的编号、截面、长度、体积和复核缺口。
 长度是中心线合并粗长，尚未扣除支座和叠合板，不能替代模型净跨。
 """
+
+
+
 from __future__ import annotations
+
+try:
+    import os as _boot_os, sys as _boot_sys
+    _boot_sys.path.insert(0, _boot_os.path.dirname(_boot_os.path.abspath(__file__)))
+    import pyboot as _boot_pyboot
+    _boot_pyboot.ensure_utf8_io()
+except Exception:
+    pass
+
 
 import argparse
 import csv

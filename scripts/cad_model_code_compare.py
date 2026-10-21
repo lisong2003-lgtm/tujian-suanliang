@@ -13,7 +13,19 @@ cad_model_code_compare.py - 用本机广联达工程量 Excel 做梁对象级自
 
 结果仍用于研发自检，不作为结算或翻样口径。
 """
+
+
+
 from __future__ import annotations
+
+try:
+    import os as _boot_os, sys as _boot_sys
+    _boot_sys.path.insert(0, _boot_os.path.dirname(_boot_os.path.abspath(__file__)))
+    import pyboot as _boot_pyboot
+    _boot_pyboot.ensure_utf8_io()
+except Exception:
+    pass
+
 
 import argparse
 import csv

@@ -1,7 +1,19 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """整册展开 DXF 里按图框登记梁编号标注位置，判断偏少编号该回本层图框还是别的楼层。"""
+
+
+
 from __future__ import annotations
+
+try:
+    import os as _boot_os, sys as _boot_sys
+    _boot_sys.path.insert(0, _boot_os.path.dirname(_boot_os.path.abspath(__file__)))
+    import pyboot as _boot_pyboot
+    _boot_pyboot.ensure_utf8_io()
+except Exception:
+    pass
+
 from cad_common import to_number as _number, round_number as _round, to_text as _text  # noqa: E402,F401
 
 import argparse

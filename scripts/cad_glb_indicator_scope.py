@@ -1,7 +1,19 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """读广联达模型云指标（清单口径）与按构件导出（构件实物量口径），逐类对账并划出 CAD 结构算量的范围边界。"""
+
+
+
 from __future__ import annotations
+
+try:
+    import os as _boot_os, sys as _boot_sys
+    _boot_sys.path.insert(0, _boot_os.path.dirname(_boot_os.path.abspath(__file__)))
+    import pyboot as _boot_pyboot
+    _boot_pyboot.ensure_utf8_io()
+except Exception:
+    pass
+
 from cad_common import to_number as _number, round_number as _round, to_text as _text  # noqa: E402,F401
 
 import argparse

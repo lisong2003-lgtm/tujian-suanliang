@@ -7,7 +7,19 @@
 按编号数量倍率重构展开面积，再判断差出来的块数能不能用镜像半幅补齐。
 只做证据分类，不改任何混凝土量，预制子层是否进报量由材料分账决定。
 """
+
+
+
 from __future__ import annotations
+
+try:
+    import os as _boot_os, sys as _boot_sys
+    _boot_sys.path.insert(0, _boot_os.path.dirname(_boot_os.path.abspath(__file__)))
+    import pyboot as _boot_pyboot
+    _boot_pyboot.ensure_utf8_io()
+except Exception:
+    pass
+
 from cad_common import to_number as _number, to_text as _text  # noqa: F401
 
 import argparse

@@ -1,4 +1,6 @@
 # 土建算量（tujian-suanliang）
+**[English](./README.en.md) | [中文](./README.md)**
+
 
 给不会用广联达的施工员/技术员：**丢一张结构施工图，几分钟内拿到报物资计划要的量**。
 

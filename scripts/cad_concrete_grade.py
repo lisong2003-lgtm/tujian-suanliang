@@ -9,7 +9,19 @@
   --ledger-report-json 统一混凝土分账报告（用于校核合计，可选）
 输出 JSON/CSV/Markdown，含 by_grade、未定量和闭合门槛。
 """
+
+
+
 from __future__ import annotations
+
+try:
+    import os as _boot_os, sys as _boot_sys
+    _boot_sys.path.insert(0, _boot_os.path.dirname(_boot_os.path.abspath(__file__)))
+    import pyboot as _boot_pyboot
+    _boot_pyboot.ensure_utf8_io()
+except Exception:
+    pass
+
 
 import argparse
 import csv

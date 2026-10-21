@@ -6,6 +6,16 @@
 索引、楼层切分、口径计算与计划单输出。缓存命中时完全不碰图纸。
 """
 from __future__ import annotations
+
+try:
+    import os as _boot_os, sys as _boot_sys
+    _boot_sys.path.insert(0, _boot_os.path.dirname(_boot_os.path.abspath(__file__)))
+    import pyboot as _boot_pyboot
+    _boot_pyboot.ensure_utf8_io()
+except Exception:
+    pass
+
+
 import argparse, bisect, collections, csv, hashlib, io, json, os, re, sqlite3, subprocess, sys, time
 from pathlib import Path
 

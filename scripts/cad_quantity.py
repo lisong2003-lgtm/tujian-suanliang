@@ -14,6 +14,16 @@ cad_quantity.py - 把 CAD 识别结果整理成“单层混凝土初算/缺口�
 """
 from __future__ import annotations
 
+try:
+    import os as _boot_os, sys as _boot_sys
+    _boot_sys.path.insert(0, _boot_os.path.dirname(_boot_os.path.abspath(__file__)))
+    import pyboot as _boot_pyboot
+    _boot_pyboot.ensure_utf8_io()
+except Exception:
+    pass
+
+
+
 import argparse
 import csv
 import io
@@ -22,6 +32,8 @@ import math
 import os
 import re
 import sys
+
+import i18n
 from collections import Counter, defaultdict
 from pathlib import Path
 from typing import Any, Optional
@@ -767,24 +779,32 @@ def csv_rows(report: dict[str, Any]) -> list[list[str]]:
 
 
 def main() -> int:
-    ap = argparse.ArgumentParser(description="CAD 单层混凝土初算与缺口报告")
-    ap.add_argument("--scan", required=True, help="cad_scan 的 JSON")
-    ap.add_argument("--detail", default=None, help="cad_scan --detail-json")
-    ap.add_argument("--floor", default=None, help="如：一层/1/屋面层")
+    raw = sys.argv[1:]
+    lang = i18n.argv_lang(raw)
+    desc = ("CAD single-floor concrete estimate & gap report." if lang == "en" else "CAD 单层混凝土初算与缺口报告")
+    ap = argparse.ArgumentParser(description=desc)
+    i18n.add_lang_arg(ap, default=lang)
+    ap.add_argument("--scan", required=True, help="cad_scan JSON" if lang == "en" else "cad_scan 的 JSON")
+    ap.add_argument("--detail", default=None, help="cad_scan --detail-json" if lang == "en" else "cad_scan --detail-json")
+    ap.add_argument("--floor", default=None, help="e.g. first/second/roof floor" if lang == "en" else "如：一层/1/屋面层")
     ap.add_argument("--format", default="md", choices=["md", "json", "csv", "all"])
-    ap.add_argument("-o", "--out", default=None, help="输出前缀")
-    args = ap.parse_args()
+    ap.add_argument("-o", "--out", default=None, help="output prefix" if lang == "en" else "输出前缀")
+    args = ap.parse_args(raw)
+
+    wn = ("written" if lang == "en" else "已写出")
+    rd = "read --scan failed" if lang == "en" else "读取 --scan 失败"
+    ddf = "read --detail failed" if lang == "en" else "读取 --detail 失败"
 
     try:
         data = json.loads(Path(args.scan).read_text(encoding="utf-8"))
     except Exception as exc:
-        print(f"读取 --scan 失败：{exc}", file=sys.stderr)
+        print(f"{rd}：{exc}", file=sys.stderr)
         return 2
     if args.detail and Path(args.detail).exists():
         try:
             data.update(json.loads(Path(args.detail).read_text(encoding="utf-8")))
         except Exception as exc:
-            print(f"读取 --detail 失败：{exc}", file=sys.stderr)
+            print(f"{ddf}：{exc}", file=sys.stderr)
             return 2
     elif not data.get("text_records"):
         side = Path(args.scan).with_name(Path(args.scan).stem + ".detail.json")
@@ -801,16 +821,20 @@ def main() -> int:
             path = Path(args.out).with_suffix(".md")
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_text(text, encoding="utf-8")
-            print(f"已写出 {path}", file=sys.stderr)
+            print(f"{wn} {path}", file=sys.stderr)
         else:
             print(text)
     if args.format in ("json", "all"):
-        text = json.dumps(report, ensure_ascii=False, indent=1)
+        report_with_meta = dict(report)
+        report_with_meta.setdefault("status", "ok")
+        report_with_meta.setdefault("message", "generated" if lang == "en" else "已生成")
+        report_with_meta["message"] = "generated" if lang == "en" else "已生成"
+        text = json.dumps(report_with_meta, ensure_ascii=False, indent=1)
         if args.out:
             path = Path(args.out).with_suffix(".json")
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_text(text, encoding="utf-8")
-            print(f"已写出 {path}", file=sys.stderr)
+            print(f"{wn} {path}", file=sys.stderr)
         else:
             print(text)
     if args.format in ("csv", "all"):
@@ -823,7 +847,7 @@ def main() -> int:
             path = Path(args.out).with_suffix(".csv")
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_text(buf.getvalue(), encoding="utf-8-sig")
-            print(f"已写出 {path}", file=sys.stderr)
+            print(f"{wn} {path}", file=sys.stderr)
         else:
             sys.stdout.write(buf.getvalue())
     return 0

@@ -1,7 +1,19 @@
 #!/usr/bin/env python3
 """审计 CAD 构件矩形之间的重复计量区域。"""
 
+
+
+
 from __future__ import annotations
+
+try:
+    import os as _boot_os, sys as _boot_sys
+    _boot_sys.path.insert(0, _boot_os.path.dirname(_boot_os.path.abspath(__file__)))
+    import pyboot as _boot_pyboot
+    _boot_pyboot.ensure_utf8_io()
+except Exception:
+    pass
+
 from cad_common import round_number as _round  # noqa: E402,F401
 
 import argparse

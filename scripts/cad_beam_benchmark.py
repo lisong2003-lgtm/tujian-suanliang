@@ -9,7 +9,19 @@ cad_beam_benchmark.py - 把 CAD 自动梁中心线结果与广联达模型汇总
       --model-summary 1#楼各层混凝土方量汇总.csv \
       --auto-json dir/*beam_auto.json -o 梁自动与模型对照
 """
+
+
+
 from __future__ import annotations
+
+try:
+    import os as _boot_os, sys as _boot_sys
+    _boot_sys.path.insert(0, _boot_os.path.dirname(_boot_os.path.abspath(__file__)))
+    import pyboot as _boot_pyboot
+    _boot_pyboot.ensure_utf8_io()
+except Exception:
+    pass
+
 
 import argparse
 import csv

@@ -7,7 +7,19 @@
 "贴墙端（与墙身互补、不重复计量）"或"无墙可解释（回图）"，
 否则要么漏计墙端混凝土、要么把边缘构件当独立构件重复计量。
 """
+
+
+
 from __future__ import annotations
+
+try:
+    import os as _boot_os, sys as _boot_sys
+    _boot_sys.path.insert(0, _boot_os.path.dirname(_boot_os.path.abspath(__file__)))
+    import pyboot as _boot_pyboot
+    _boot_pyboot.ensure_utf8_io()
+except Exception:
+    pass
+
 from cad_common import to_number as _number, round_number as _round, to_text as _text  # noqa: E402,F401
 
 import argparse

@@ -13,7 +13,19 @@ cad_geometry.py - 把目标楼层图框内图块展开成可复核 DXF/SVG/JSON 
   cad_geometry.sh 图纸.dwg --scan 图纸.scan.json --detail 图纸.detail.json \
       --floor-label "一层梁平法施工图" --out 一层几何
 """
+
+
+
 from __future__ import annotations
+
+try:
+    import os as _boot_os, sys as _boot_sys
+    _boot_sys.path.insert(0, _boot_os.path.dirname(_boot_os.path.abspath(__file__)))
+    import pyboot as _boot_pyboot
+    _boot_pyboot.ensure_utf8_io()
+except Exception:
+    pass
+
 
 import argparse
 import json

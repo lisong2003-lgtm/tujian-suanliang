@@ -8,7 +8,19 @@
 3. 按“垂直距离 + 沿轴缺口 - 梁段长度先验”选择匹配段；
 4. 截面表为可选输入，截面来源和粗方量状态完整保留。
 """
+
+
+
 from __future__ import annotations
+
+try:
+    import os as _boot_os, sys as _boot_sys
+    _boot_sys.path.insert(0, _boot_os.path.dirname(_boot_os.path.abspath(__file__)))
+    import pyboot as _boot_pyboot
+    _boot_pyboot.ensure_utf8_io()
+except Exception:
+    pass
+
 
 import argparse
 import csv

@@ -5,7 +5,19 @@
 背景：按轴线推定的实例中心线可能只是轴网/中心线，图面并没有对应梁。此类实例
 既不扣也不加，必须先退出分标号台账，否则实例口径会被当报量依据。
 """
+
+
+
 from __future__ import annotations
+
+try:
+    import os as _boot_os, sys as _boot_sys
+    _boot_sys.path.insert(0, _boot_os.path.dirname(_boot_os.path.abspath(__file__)))
+    import pyboot as _boot_pyboot
+    _boot_pyboot.ensure_utf8_io()
+except Exception:
+    pass
+
 from cad_common import to_number as _number, round_number as _round, to_text as _text  # noqa: E402,F401
 
 import argparse

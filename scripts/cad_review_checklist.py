@@ -7,7 +7,19 @@
 每条给出构件编号、问题、需要确认什么、影响量、图面坐标和句柄，
 末尾留空的"确认结果/确认人/日期"三列供现场填写。
 """
+
+
+
 from __future__ import annotations
+
+try:
+    import os as _boot_os, sys as _boot_sys
+    _boot_sys.path.insert(0, _boot_os.path.dirname(_boot_os.path.abspath(__file__)))
+    import pyboot as _boot_pyboot
+    _boot_pyboot.ensure_utf8_io()
+except Exception:
+    pass
+
 from cad_common import to_number as _number  # noqa: E402,F401
 
 import argparse
