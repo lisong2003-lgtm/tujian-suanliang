@@ -29,6 +29,8 @@ jobs:
       - name: Setup deps (cad-file-reader)
         shell: bash
         run: |
+          # 固定让 cad-file-reader 的 setup.py 使用与 CI 相同的解释器（否则可能装到 cp315 而运行时是 3.14）
+          export CAD_PYTHON="$(command -v python)"
           python -m pip install --disable-pip-version-check --no-input -q openpyxl
           git clone --depth 1 --branch v0.32.1 https://github.com/lisong2003-lgtm/cad-file-reader ../cad-file-reader
           # 强制用本平台 PyPI 二进制重建 vendor（Release 包内自带 macOS _core.abi3.so，跨平台不可用）
@@ -42,6 +44,14 @@ jobs:
               print('cleared cad-file-reader/vendor')
           PY2
           python ../cad-file-reader/scripts/setup.py --force
+          # 用与测试相同的解释器自检 vendor 里的 numpy 可导入（失败时 CI 立刻停止）
+          python - <<'PY'
+          import sys
+          from pathlib import Path
+          sys.path.insert(0, str(Path('../cad-file-reader/vendor').resolve()))
+          import numpy
+          print('vendor numpy import ok:', numpy.__version__)
+          PY
 
       - name: unittest discover（320 tests, 含真实 CLI 中文 JSON）
         shell: bash
