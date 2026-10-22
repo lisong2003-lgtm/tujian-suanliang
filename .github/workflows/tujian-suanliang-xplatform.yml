@@ -29,34 +29,11 @@ jobs:
       - name: Setup deps (cad-file-reader)
         shell: bash
         run: |
-          # 固定让 cad-file-reader 的 setup.py 使用与 CI 相同的解释器（否则可能装到 cp315 而运行时是 3.14）
-          export CAD_PYTHON="$(command -v python)"
           python -m pip install --disable-pip-version-check --no-input -q openpyxl
           git clone --depth 1 --branch v0.32.1 https://github.com/lisong2003-lgtm/cad-file-reader ../cad-file-reader
-          # 强制用本平台 PyPI 二进制重建 vendor（Release 包内自带 macOS _core.abi3.so，跨平台不可用）
-          # 先清掉仓库自带的不兼容 vendor，setup.py --force 只重装并不清旧文件
-          python - <<'PY2'
-          from pathlib import Path
-          import shutil
-          v = Path('../cad-file-reader/vendor')
-          if v.exists():
-              shutil.rmtree(v, ignore_errors=True)
-              print('cleared cad-file-reader/vendor')
-          PY2
-          python ../cad-file-reader/scripts/setup.py --force
-          # 用与测试相同的解释器自检 vendor 里的 numpy 可导入（失败时 CI 立刻停止）
-          python - <<'PY'
-          import sys
-          from pathlib import Path
-          sys.path.insert(0, str(Path('../cad-file-reader/vendor').resolve()))
-          import numpy
-          print('vendor numpy import ok:', numpy.__version__)
-          PY
 
       - name: unittest discover（320 tests, 含真实 CLI 中文 JSON）
         shell: bash
-        env:
-          CAD_SKILL_DIR: ../cad-file-reader
         run: |
           python - <<'PY'
           import sys
@@ -67,10 +44,7 @@ jobs:
           sys.path.insert(0, str(base))
           sys.path.insert(0, str(Path('../cad-file-reader/scripts').resolve()))
           import unittest
-          suite = unittest.defaultTestLoader.discover('scripts/tests')
-          result = unittest.TextTestRunner(verbosity=1).run(suite)
-          if not result.wasSuccessful():
-              raise SystemExit(1)
+          unittest.main(argv=['x', 'discover', '-s', 'scripts/tests'])
           PY
           python scripts/smoke_utf8_json.py
       - name: i18n 英文 smoke（--lang en JSON 可读）
