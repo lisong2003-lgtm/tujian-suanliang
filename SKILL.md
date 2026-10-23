@@ -2,7 +2,7 @@
 name: tujian-suanliang
 slug: tujian-suanliang
 displayName: 土建算量 · 混凝土与钢筋计划口径速算
-version: 0.9.22
+version: 0.9.23
 platforms: [macos, windows, linux]
 author: lis
 license: CC-BY-NC-SA-4.0
@@ -154,7 +154,7 @@ scripts/run_qty.sh advanced 结构图.dwg \
 ④ 常见本机开发副本（`tan/work` 等，最后才回退）。
 命中 dev/临时副本时 stderr 会输出告警行「bus 命中来源：<路径>（临时副本/dev，非正式安装）」，正式路径输出「（正式安装）」；找不到 bus 时不报错，直接写 `$HOME/.codex/skills/.skillbus/state.json`（与 bus 同构，后续装 bus 可无缝读取）。 bus 未安装时同样可用同一客户端读写本机状态文件（见 cad-file-reader 侧接线说明）。本技能自身口径、扣减、损耗、分账与台账逻辑不变。
 
-- Windows 接线：scripts/qty_statesync.cmd；等价 lis-skill-bus/integration/qty_pull_contract.cmd。Windows 未实机跑通，仅静态校验通过（CRLF 行尾；无 /Users、/bin/sh、python3 硬编码；py 启动器 + %PYTHON%/%CODEX_PYTHON% 回退；默认路径用 %USERPROFILE%\.codex）。
+- Windows 接线：GitHub 完整包 scripts/qty_statesync.cmd（SkillHub 版无 .cmd 时用 `python scripts/qty_statesync.py` 等价调用）；等价 lis-skill-bus/integration/qty_pull_contract.cmd。Windows 未实机跑通，仅静态校验通过（CRLF 行尾；无 /Users、/bin/sh、python3 硬编码；py 启动器 + %PYTHON%/%CODEX_PYTHON% 回退；默认路径用 %USERPROFILE%\.codex）。
 
 ## QTO 五专业联动（P1，可选）
 
