@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.9.25
+
+- 版本号补丁：与 ClawHub 已发布的 0.9.24 区分，内容为本轮发布兼容与跨 Agent 修复。
+
 ## 0.9.24
 
 - **修复** `run_qty.sh` / `run_cad.sh` 改用统一 `scripts/runtime_env.sh` 解析运行时，底座定位支持 WorkBuddy 等同级安装目录。
