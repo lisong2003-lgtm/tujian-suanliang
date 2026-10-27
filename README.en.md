@@ -10,7 +10,7 @@ Use for civil/structural rough takeoff and material planning from DWG/DXF. It no
 
 ## Quick start
 ```bash
-python3 scripts/cad_quantity.py --scan scan.json --format all --out out
+bash scripts/cad_quantity.sh --scan scan.json --format all --out out
 python3 scripts/run_qty.sh <drawing.dwg>
 ```
 

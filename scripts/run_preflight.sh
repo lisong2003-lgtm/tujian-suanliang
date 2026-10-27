@@ -27,7 +27,7 @@ fi
 # 定位识图底座（土建测试依赖 cad_interpret 等底座模块）
 CAD_SKILL_DIR="${CAD_SKILL_DIR:-}"
 if [[ -z "${CAD_SKILL_DIR}" ]]; then
-  for d in "$HOME/.codex/skills/cad-file-reader" "$HOME/.claude/skills/cad-file-reader"; do
+  for d in "$SKILL_DIR/../cad-file-reader" "$HOME"/.workbuddy/skills/*/cad-file-reader "$HOME/.claude/skills/cad-file-reader" "$HOME/.codex/skills/cad-file-reader"; do
     [[ -d "$d" ]] && { CAD_SKILL_DIR="$d"; break; }
   done
 fi
@@ -50,7 +50,7 @@ fi
 echo "=== 3/3 真图回归（识图底座层） ==="
 CAD_SKILL_DIR="${CAD_SKILL_DIR:-}"
 if [[ -z "${CAD_SKILL_DIR}" ]]; then
-  for d in "$HOME/.codex/skills/cad-file-reader" "$HOME/.claude/skills/cad-file-reader"; do
+  for d in "$SKILL_DIR/../cad-file-reader" "$HOME"/.workbuddy/skills/*/cad-file-reader "$HOME/.claude/skills/cad-file-reader" "$HOME/.codex/skills/cad-file-reader"; do
     [[ -d "$d" ]] && { CAD_SKILL_DIR="$d"; break; }
   done
 fi

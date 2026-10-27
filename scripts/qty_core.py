@@ -46,7 +46,11 @@ def log(msg):
 def cad_base() -> Path:
     if os.environ.get("CAD_SKILL_DIR"):
         return Path(os.environ["CAD_SKILL_DIR"])
-    for d in (Path.home() / ".codex/skills/cad-file-reader", Path.home() / ".claude/skills/cad-file-reader"):
+    here = Path(__file__).resolve().parent.parent
+    for d in (here.parent / "cad-file-reader",
+              *sorted(Path.home().glob(".workbuddy/skills/*/cad-file-reader")),
+              Path.home() / ".claude/skills/cad-file-reader",
+              Path.home() / ".codex/skills/cad-file-reader"):
         if d.is_dir():
             return d
     raise SystemExit("找不到底座技能 cad-file-reader：设 CAD_SKILL_DIR 指向它")
@@ -112,7 +116,7 @@ def run_measurement_candidates(out: Path) -> bool:
         log(f"[测量] 底座缺少测量候选入口（不阻断出量）：{exc}")
         return False
     r = subprocess.run(
-        [str(script), str(detail), "--out-dir", str(measure_out)],
+        ["bash", str(script), str(detail), "--out-dir", str(measure_out)],
         capture_output=True, text=True,
     )
     if r.returncode != 0:
@@ -133,7 +137,7 @@ def validate_measurement_candidates(out: Path) -> bool:
     except SystemExit as exc:
         log(f"[测量校验] 底座缺少校验入口（不阻断出量）：{exc}")
         return False
-    r = subprocess.run([str(script), str(target)], capture_output=True, text=True)
+    r = subprocess.run(["bash", str(script), str(target)], capture_output=True, text=True)
     errors = []
     for ln in r.stdout.splitlines():
         if not ln.strip():
@@ -165,7 +169,7 @@ def run_compare_baseline(out: Path, baseline: str) -> bool:
     dst = out / "cad-compare"
     dst.mkdir(parents=True, exist_ok=True)
     r = subprocess.run(
-        [str(script), baseline, str(detail), "--out-dir", str(dst), "--tolerance", "1.0", "--max-changes", "5000"],
+        ["bash", str(script), baseline, str(detail), "--out-dir", str(dst), "--tolerance", "1.0", "--max-changes", "5000"],
         capture_output=True, text=True,
     )
     ok = r.returncode == 0
@@ -187,7 +191,7 @@ def run_normative(out: Path) -> bool:
     except SystemExit as exc:
         log(f"[规范] 底座缺少规范辅助入口（不阻断出量）：{exc}")
         return False
-    args = [str(script), "--scan", str(scan),
+    args = ["bash", str(script), "--scan", str(scan),
             "--rules", str(cad_base() / "rules"), "--format", "all", "-o", str(out / "normative")]
     if detail.exists():
         args[3:3] = ["--detail", str(detail)]
@@ -225,7 +229,7 @@ def build_index(dwg: Path, out: Path, with_geom: bool, keep_detail: bool = False
         scan = cad_base() / "scripts" / "cad_scan.sh"
         if not scan.exists():
             raise SystemExit(f"底座入口不存在：{scan}")
-        args = [str(scan), str(dwg), "--with-mtext", "--spec-table", "--cluster", "1500",
+        args = ["bash", str(scan), str(dwg), "--with-mtext", "--spec-table", "--cluster", "1500",
                 "--detail-json", str(out / "detail.json"), "--format", "json", "-o", str(out / "scan")]
         if with_geom:
             args[2:2] = ["--with-geom", "--with-geom-layer"]

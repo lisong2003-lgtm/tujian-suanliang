@@ -35,8 +35,10 @@ VENDOR_DIR = SKILL_DIR / "vendor"
 def _find_cad_base() -> Path:
     env = os.environ.get("CAD_SKILL_DIR")
     candidates = [Path(env)] if env else []
-    candidates += [Path.home() / ".codex/skills/cad-file-reader",
-                   Path.home() / ".claude/skills/cad-file-reader"]
+    candidates += [SKILL_DIR.parent / "cad-file-reader",
+                   *sorted(Path.home().glob(".workbuddy/skills/*/cad-file-reader")),
+                   Path.home() / ".claude/skills/cad-file-reader",
+                   Path.home() / ".codex/skills/cad-file-reader"]
     for candidate in candidates:
         if candidate.is_dir():
             return candidate

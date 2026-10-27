@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.9.24
+
+- **修复** `run_qty.sh` / `run_cad.sh` 改用统一 `scripts/runtime_env.sh` 解析运行时，底座定位支持 WorkBuddy 等同级安装目录。
+- **增强** `run_cad.sh` 支持底座脚本回退：本技能 `scripts/` 找不到时自动到识图底座 `scripts/` 取同名脚本（如 `cad_scan`），修复文档中「底座脚本被当成技能内脚本」的歧义。
+- **修复** 全部 `.sh` 缺可执行位（75 个），曾导致 `qty_statesync` 调用底座 `cad_statesync.sh` 时 PermissionError。
+- **修复** `scripts/tests/` 缺 `__init__.py`，`unittest discover` 无法识别；补后 `discover` 方式可跑 320 条用例。
+- **新增** `requirements.txt`、Windows 启动器 `run_qty.cmd` / `qty_statesync.cmd`。
+- **文档** 命令统一改为 `bash scripts/*.sh`。
+- **修复（发布兼容）** `qty_core.py` 调用底座的 `cad_measure.sh / cad_validate.sh / cad_compare.sh / cad_normative.sh / cad_scan.sh`，以及 `qty_statesync.py` 调用 `cad_statesync.sh`，全部改为 `bash` 启动；`scripts/*.sh` 转发壳同步改为 `exec bash`。SkillHub 打包丢失执行位后不再出现 PermissionError。
+- **修复（跨 Agent）** `qty_core.py` / `cad_quantity_pipeline.py` 的底座探测增加「同级目录 + `~/.workbuddy/skills/*/cad-file-reader`」，原 `~/.claude`、`~/.codex` 保留为回退。
+- **测试** `test_qty_core.py` 断言同步更新为 `args[0] == "bash"`（320 用例保持全过）。
+
 ## 0.9.23 (2026-10-23)
 - 修复 SkillHub 版 Windows 无 `.cmd` 时的接线说明：改为 `python scripts/*_statesync.py` 等价调用（bus 安装用 `python install_py.py --apply`）；GitHub 完整包保留 `.cmd`。平台发布调整，算法/契约/口径不变。
 

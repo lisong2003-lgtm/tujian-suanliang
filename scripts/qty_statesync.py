@@ -53,7 +53,7 @@ def _find_deps_shim(cad_dir: Path) -> Path:
 
 def _pull(cad_dir: Path, project: str, building: str, floor: str, entry_id: str) -> dict:
     shim = _find_deps_shim(cad_dir)
-    cmd = [str(shim), "pull", "--project", project]
+    cmd = ["bash", str(shim), "pull", "--project", project]
     if building:
         cmd += ["--building", building]
     if floor:

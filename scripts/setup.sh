@@ -3,5 +3,5 @@
 set -euo pipefail
 SKILL_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 echo "[shangwu-suanliang] 检测显式依赖底座 cad-file-reader……"
-"$SKILL_DIR/scripts/ensure_base.sh"
+bash bash "$SKILL_DIR/scripts/ensure_base.sh"
 echo "[shangwu-suanliang] 安装自检完成。"

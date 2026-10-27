@@ -439,7 +439,9 @@ class BaseAndNormative(unittest.TestCase):
                 with patch.object(q.subprocess, 'run', return_value=SimpleNamespace(returncode=0, stderr='')) as run:
                     self.assertTrue(q.run_normative(out))
                     args = run.call_args.args[0]
-                    self.assertEqual(args[0], str(script))
+                    # 通过 bash 启动，不依赖 .sh 的执行位（SkillHub 打包会丢失执行位）
+                    self.assertEqual(args[0], "bash")
+                    self.assertEqual(args[1], str(script))
                     self.assertIn('--detail', args)
                 with patch.object(q.subprocess, 'run', return_value=SimpleNamespace(returncode=2, stderr='line1\n底座辅助不可用')):
                     self.assertFalse(q.run_normative(out))
