@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.9.28
+
+- **更新发布** 补 CHANGELOG 详细条目与 README.en 版本号；三端（Codex/WorkBuddy/发布仓库）同版本同内容再次校验通过。tujian-suanliang 的 manifest tests 仅保留真实存在的 `scripts/self_test.py`（完整 tests 见本机 shangwu-suanliang 商务版）。
+- 算法、契约、权限、SKILL.md 正文与上一版无变化。
+
+## 0.9.27
+
+- **授权与保留** 新增「授权与保留」段落：作者 lis 声明本技能可商用/可再分发/可对外授权，商用前按双许可说明确认是否需联系作者申报。
+- **脱敏（发布合规）** rules 中的公司内部来源字段由「公司知识库/…/规范图集」改为「公开规范与行业通用做法整理」，不再引用公司内部资料路径。
+- **版本对齐** 本机 `~/.codex/skills`、`~/.workbuddy/skills` 与发布仓库同步同版本；算法、契约、兼容性与上一版一致，未改业务逻辑。
+
 ## 0.9.25
 
 - 版本号补丁：与 ClawHub 已发布的 0.9.24 区分，内容为本轮发布兼容与跨 Agent 修复。
@@ -13,7 +24,7 @@
 - **新增** `requirements.txt`、Windows 启动器 `run_qty.cmd` / `qty_statesync.cmd`。
 - **文档** 命令统一改为 `bash scripts/*.sh`。
 - **修复（发布兼容）** `qty_core.py` 调用底座的 `cad_measure.sh / cad_validate.sh / cad_compare.sh / cad_normative.sh / cad_scan.sh`，以及 `qty_statesync.py` 调用 `cad_statesync.sh`，全部改为 `bash` 启动；`scripts/*.sh` 转发壳同步改为 `exec bash`。SkillHub 打包丢失执行位后不再出现 PermissionError。
-- **修复（跨 Agent）** `qty_core.py` / `cad_quantity_pipeline.py` 的底座探测增加「同级目录 + `~/.workbuddy/skills/*/cad-file-reader`」，原 `~/.claude`、`~/.codex` 保留为回退。
+- **修复（跨 Agent）** `qty_core.py` / `cad_quantity_pipeline.py` 的底座探测增加「同级目录 + `~/.workbuddy/skills/*/cad-file-reader`」，原 `~/.claude`、`$HOME/.codex` 保留为回退。
 - **测试** `test_qty_core.py` 断言同步更新为 `args[0] == "bash"`（320 用例保持全过）。
 
 ## 0.9.23 (2026-10-23)

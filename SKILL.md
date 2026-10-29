@@ -2,7 +2,7 @@
 name: tujian-suanliang
 slug: tujian-suanliang
 displayName: 土建算量 · 混凝土与钢筋计划口径速算
-version: 0.9.26
+version: 0.9.28
 platforms: [macos, windows, linux]
 author: lis
 license: CC-BY-NC-SA-4.0
@@ -174,7 +174,7 @@ scripts/run_qty.sh advanced 结构图.dwg \
 
 - 所有 `scripts/*.sh` 入口都 `source scripts/runtime_env.sh`，由它统一解析三件事：
   1. **解释器**：`CAD_SKILL_PYTHON` / `CODEX_PYTHON` → Codex 运行时 → PATH 上的 `python3.12/3.11` → `python3`（要求 ≥3.10）；
-  2. **识图底座**：`CAD_SKILL_DIR` → 同级 `../cad-file-reader` → `~/.workbuddy/skills/*/cad-file-reader` → `~/.claude` → `~/.codex`；
+  2. **识图底座**：`CAD_SKILL_DIR` → 同级 `../cad-file-reader` → `~/.workbuddy/skills/*/cad-file-reader` → `~/.claude` → `$HOME/.codex`；
   3. **依赖路径**：把「本技能 scripts + 底座 scripts + 底座 vendor」拼进 `PYTHONPATH`，`ezdxf / ezdwg / openpyxl` 等**无需全局 pip 安装**。
 - 推荐用对应的 `bash scripts/<入口>.sh`；直接 `python3 <入口>.py` 只在全局已装齐依赖时可用。
 - 依赖缺失时按 `requirements.txt` 安装：`python3 -m pip install -r requirements.txt`。

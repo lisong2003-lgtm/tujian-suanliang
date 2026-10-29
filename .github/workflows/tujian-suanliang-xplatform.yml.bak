@@ -1,0 +1,55 @@
+name: shangwu-suanliang cross-platform CI
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  cross-platform:
+    name: ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    env:
+      PYTHONIOENCODING: utf-8
+      PYTHONUTF8: "1"
+    steps:
+      - name: Setup deps (cad-file-reader)
+        shell: bash
+        run: |
+          python -m pip install --disable-pip-version-check --no-input -q openpyxl
+          git clone --depth 1 --branch 0.32.1 https://github.com/lisong2003-lgtm/cad-file-reader ../cad-file-reader
+
+      - name: unittest discover（320 tests, 含真实 CLI 中文 JSON）
+        shell: bash
+        run: |
+          python - <<'PY'
+          import sys
+          from pathlib import Path
+          base = Path('scripts')
+          root = Path('.').resolve()
+          sys.path.insert(0, str(root))
+          sys.path.insert(0, str(base))
+          sys.path.insert(0, str(Path('../cad-file-reader/scripts').resolve()))
+          import unittest
+          unittest.main(argv=['x', 'discover', '-s', 'scripts/tests'])
+          PY
+          python scripts/smoke_utf8_json.py
+      - name: i18n 英文 smoke（--lang en JSON 可读）
+        run: python scripts/smoke_utf8_json.py --lang en
+
+      - name: Windows 中文 JSON 输出验证
+        if: runner.os == 'Windows'
+        shell: bash
+        run: python scripts/smoke_utf8_json.py

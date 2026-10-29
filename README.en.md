@@ -1,6 +1,6 @@
 # Civil/Structural Quantity Takeoff (Tujian)
 
-> shangwu-suanliang (shangwu-suanliang) v0.9.20 · overseas-friendly lightweight layer. 中文版见 [README.md](README.md).
+> tujian-suanliang (tujian-suanliang) v0.9.28 · overseas-friendly lightweight layer. 中文版见 [README.md](README.md).
 
 ## What it is
 Produces fast concrete volume and rebar estimate bands from structural drawings, with standard size/grades checks and norm/figure metadata. Reports per floor or pour zone (including post-cast first-pour vs closed-band accounting) for material planning.
