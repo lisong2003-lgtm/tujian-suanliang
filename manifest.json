@@ -1,6 +1,6 @@
 {
   "name": "tujian-suanliang",
-  "version": "0.9.37",
+  "version": "0.9.40",
   "author": "lis",
   "license": "CC-BY-NC-SA-4.0",
   "entry": "SKILL.md",
@@ -88,14 +88,18 @@
     "scripts/steel_tonnage.sh"
   ],
   "references": [
-    ".gitignore",
     "CHANGELOG.md",
     "LESSONS.md",
     "LICENSE.md",
     "README.md",
     "packs/quantity-pipeline/SKILL.md",
     "packs/quantity-pipeline/history.md",
-    "README.en.md"
+    "README.en.md",
+    "docs/history.md",
+    "docs/performance.md",
+    "docs/bus-integration.md",
+    "docs/runtime.md",
+    "docs/README.md"
   ],
   "rules": [
     "rules/beam_rules.json",
