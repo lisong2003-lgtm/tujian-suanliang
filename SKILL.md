@@ -2,11 +2,11 @@
 name: tujian-suanliang
 slug: tujian-suanliang
 displayName: 土建算量 · 混凝土与钢筋计划口径速算
-version: 0.9.40
+version: 0.9.41
 platforms: [macos, windows, linux]
 author: lis
 license: CC-BY-NC-SA-4.0
-description: 从 DWG/DXF 结构图读取 cad-file-reader 契约，按楼层/浇筑区输出混凝土、钢筋估算带和物资计划草稿；不替代翻样、下料与结算。
+description: "结构图出混凝土/钢筋估算；不替代翻样结算。触发词：土建算量、混凝土、钢筋。"
 i18n:
   en: README.en.md
   zh: README.md
