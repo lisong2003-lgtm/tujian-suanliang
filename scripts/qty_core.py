@@ -19,6 +19,13 @@ except Exception:
 import argparse, bisect, collections, csv, hashlib, io, json, os, re, sqlite3, subprocess, sys, time
 from pathlib import Path
 
+from contract_guard import GuardError, guard_contract, stamp_result
+import contract_support as cs
+import entry_gate as eg
+
+SKILL_NAME = "tujian-suanliang"
+SKILL_VERSION = "0.9.44"
+
 _RULES_PATH = Path(__file__).resolve().parents[1] / "rules" / "口径.json"
 _RULES_TEXT = _RULES_PATH.read_text(encoding="utf-8")
 RULES = json.loads(_RULES_TEXT)
@@ -272,17 +279,9 @@ def build_index(dwg: Path, out: Path, with_geom: bool, keep_detail: bool = False
         db.unlink(missing_ok=True)
     out.mkdir(parents=True, exist_ok=True)
     if not (out / "detail.json").exists():
-        scan = cad_base() / "scripts" / "cad_scan.sh"
-        if not scan.exists():
-            raise SystemExit(f"底座入口不存在：{scan}")
-        args = ["bash", str(scan), str(dwg), "--with-mtext", "--spec-table", "--cluster", "1500",
-                "--detail-json", str(out / "detail.json"), "--format", "json", "-o", str(out / "scan")]
-        if with_geom:
-            args[2:2] = ["--with-geom", "--with-geom-layer"]
-        log(f"[索引] 调用底座解图：{dwg.name}（每张图只一次）")
-        r = subprocess.run(args, capture_output=True, text=True)
-        if r.returncode != 0:
-            raise SystemExit(f"底座解图失败 exit={r.returncode}：{r.stderr.strip()[-400:]}")
+        raise SystemExit(
+            "[tujian] 缓存缺 detail.json：本技能已不自行解图。请先让 cad-file-reader "
+            "产出 cad-contract/v1 契约（含 text_records/geometry_segments），再把契约 JSON 交给本入口。")
     has_norm = False
     if with_normative and not norm_file.exists():
         has_norm = run_normative(out)
@@ -939,7 +938,9 @@ def story_from_table(rows, sheets, label, titles, basis="below"):
             pairs.append((el[0], hh[0] if hh else None))
     if not pairs:
         return None, {"原因": "表内没读出标高数字", "来源表": cand[0]["title"]}
-    pairs.sort()
+    # 只按标高排序：表里常有"只标标高、没有层高列"的行，第二轮是 None，
+    # 直接 sort 元组会在标高相等时比 None<None / None<float 抛 TypeError（真图已复现）。
+    pairs.sort(key=lambda pair: pair[0])
     diffs = [abs(e - elev) for e, _ in pairs]
     i = min(range(len(pairs)), key=lambda k: diffs[k])
     if diffs[i] <= 0.02:                      # 取最接近的一行（表里常有 -0.050/-0.060 这种挨着的标高）
@@ -1353,6 +1354,32 @@ def plan_rows(rows, loss=None):
 # --------------------------------------------------------------- 输出
 def write_out(rows, plan, missing, ctx, out_base: Path, fmt="all"):
     out_base.parent.mkdir(parents=True, exist_ok=True)
+    prov = ctx.get("provenance") or {}
+    sidecar = {
+        "schema": "suanliang-result/v1",
+        "skill": SKILL_NAME,
+        "skill_version": _skill_version(),
+        "status": "ok" if rows else "empty",
+        "drawing": ctx.get("drawing"),
+        "floor": ctx.get("label"),
+        "row_count": len(rows or []),
+        "plan": plan or [],
+        "missing_count": len(missing or []),
+        "missing": [
+            {"member": c, "id": k, "why": why}
+            for c, k, why, _raw in (missing or [])
+        ],
+        "provenance": prov.get("provenance", "manual"),
+        "contract_id": prov.get("contract_id", ""),
+        "source_sha256": prov.get("source_sha256", ""),
+        "contract_sha256": prov.get("contract_sha256", ""),
+        "reader_version": prov.get("reader_version", ""),
+        "final_quantity": bool(prov.get("final_quantity")),
+        "formal_ledger_eligible": bool(prov.get("formal_ledger_eligible")),
+        "run_manifest": ctx.get("run_manifest") or {},
+        "site_handoff": "site_handoff.json",
+    }
+    cs.write_json(str(out_base) + ".json", sidecar)
     if fmt in ("all", "csv"):
         for name, data in (("明细", rows), ("计划", plan)):
             if data:
@@ -1502,21 +1529,107 @@ def write_out(rows, plan, missing, ctx, out_base: Path, fmt="all"):
         wb.save(str(out_base) + ".xlsx")
 
 
+# --------------------------------------------------------------- 契约入口
+def _skill_version() -> str:
+    try:
+        return str(json.loads((Path(__file__).resolve().parents[1] / "manifest.json")
+                              .read_text(encoding="utf-8")).get("version") or SKILL_VERSION)
+    except Exception:
+        return SKILL_VERSION
+
+
+def contract_cache_dir(contract: Path, guard: dict, override=None) -> Path:
+    """契约缓存按 contract_sha256 分目录，绝不复用原 DWG 的文件哈希缓存。"""
+    digest = guard.get("contract_sha256") or file_key(contract)
+    key = "contract-" + digest[:16]
+    if override:
+        return Path(override) / key
+    local = contract.parent / ".cadidx" / key
+    try:
+        local.mkdir(parents=True, exist_ok=True)
+        return local
+    except Exception:
+        import tempfile
+        base = Path(os.environ.get("QTY_CACHE_DIR") or (Path(tempfile.gettempdir()) / "tujian-suanliang-cache"))
+        log(f"[缓存] 契约目录不可写，改用 {base}")
+        base.mkdir(parents=True, exist_ok=True)
+        return base / key
+
+
+def _contract_payload(doc: dict) -> dict:
+    payload = doc.get("contract") if isinstance(doc.get("contract"), dict) else doc
+    return payload if isinstance(payload, dict) else {}
+
+
+def materialize_contract(contract: Path, guard: dict, out: Path) -> Path:
+    """把契约 payload 落成 detail.json；不调用 cad_scan，不重新解图。"""
+    doc = json.loads(contract.read_text(encoding="utf-8"))
+    payload = _contract_payload(doc)
+    missing = [key for key in ("text_records", "geometry_segments") if key not in payload]
+    if missing:
+        print("[tujian] 契约缺 %s，无法重建索引；请回 cad-file-reader 重新生成。"
+              % ", ".join(missing), file=sys.stderr)
+        raise SystemExit(5)
+    out.mkdir(parents=True, exist_ok=True)
+    cs.write_json(out / "detail.json", payload)
+    cs.write_json(out / "scan.json", payload)
+    cs.write_json(out / "contract.json", doc)
+    cs.write_json(out / "provenance.json", {
+        "provenance": guard.get("provenance") or "manual",
+        "mode": guard.get("mode") or "manual",
+        "contract_id": guard.get("contract_id") or "",
+        "source_sha256": guard.get("source_sha256") or "",
+        "contract_sha256": guard.get("contract_sha256") or "",
+        "formal_ledger_eligible": bool(guard.get("formal_ledger_eligible")),
+        "contract_file": str(contract),
+    })
+    return out
+
+
+def resolve_contract_source(a):
+    """返回 (缓存目录, guard)；只接受 cad-contract/v1 JSON，拒绝直接 DWG。"""
+    raw = Path(a.dwg).expanduser()
+    if not raw.is_file():
+        print("[tujian] 输入不存在：%s" % raw, file=sys.stderr)
+        raise SystemExit(2)
+    if raw.suffix.lower() != ".json":
+        print("[tujian] 已按识图契约红线拒绝直接图纸：%s\n"
+              "请先用 cad-file-reader 产出 cad-contract/v1 契约（cad_scan / cad_contract），"
+              "再把契约 JSON 交给本入口；本技能不自行解析 DWG/DXF。" % raw.name,
+              file=sys.stderr)
+        raise SystemExit(2)
+    try:
+        guard = guard_contract(raw, allow_manual=bool(getattr(a, "allow_manual", False)))
+    except GuardError as exc:
+        print("[GuardError %d] %s" % (exc.code, exc.message), file=sys.stderr)
+        if exc.hint:
+            print("修复: %s" % exc.hint, file=sys.stderr)
+        raise SystemExit(exc.code) from None
+    out = contract_cache_dir(raw, guard, getattr(a, "cache_dir", None))
+    materialize_contract(raw, guard, out)
+    log("[契约] provenance=%s contract_id=%s %s" % (
+        guard.get("provenance"), guard.get("contract_id") or "-",
+        "" if guard.get("mode") == "formal" else "（手工降级：final_quantity=false）"))
+    return out, guard
+
+
 # --------------------------------------------------------------- 命令
 def cmd_index(a):
-    dwg = Path(a.dwg).expanduser().resolve()
-    out = cache_dir(dwg, a.cache_dir)
-    db = build_index(dwg, out, a.with_geom, a.keep_detail,
+    out, guard = resolve_contract_source(a)
+    db = build_index(Path(a.dwg).expanduser(), out, a.with_geom, True,
                      compare_baseline=getattr(a, "compare_baseline", ""))
-    print(json.dumps({"ok": True, "db": str(db)}, ensure_ascii=False))
+    print(json.dumps({"ok": True, "db": str(db),
+                      "provenance": guard.get("provenance"),
+                      "contract_id": guard.get("contract_id") or "",
+                      "final_quantity": bool(guard.get("formal_ledger_eligible"))},
+                     ensure_ascii=False))
     return 0
 
 
 def cmd_floors(a):
-    dwg = Path(a.dwg).expanduser().resolve()
-    out = cache_dir(dwg, a.cache_dir)
+    out, guard = resolve_contract_source(a)
     t0 = time.time()
-    db = build_index(dwg, out, a.with_geom, a.keep_detail)
+    db = build_index(Path(a.dwg).expanduser(), out, a.with_geom, True)
     _meta, _built, rows, _segs, _sheets = load(db)
     titles, info = find_titles(rows, a.min_refs, a.radius_mm, a.title_pattern)
     log(f"真图名 {info['real']} 个（候选 {info['cand']}，构件文字 {info['members']}，半径 {info.get('radius')} mm）"
@@ -1527,10 +1640,10 @@ def cmd_floors(a):
 
 
 def cmd_floor(a):
-    dwg = Path(a.dwg).expanduser().resolve()
-    out = cache_dir(dwg, a.cache_dir)
+    out, guard = resolve_contract_source(a)
+    dwg = Path(a.dwg).expanduser()
     t0 = time.time()
-    db = build_index(dwg, out, a.with_geom, a.keep_detail)
+    db = build_index(dwg, out, a.with_geom, True)
     index_secs = round(time.time() - t0, 1)
     cached = index_secs < 0.6
     meta, built, rows, segs, sheets = load(db)
@@ -1639,8 +1752,25 @@ def cmd_floor(a):
                            "明细": op_items, "只编号无尺寸": op_naked},
               "norm_checks": norm_checks,
               "rules": {"版本": RULES.get("version"), "指纹": RULES_SHA},
-              "query_secs": round(time.time() - t0, 2), "loss": a.loss},
+              "query_secs": round(time.time() - t0, 2), "loss": a.loss,
+              "provenance": cs.provenance_fields(guard),
+              "run_manifest": cs.run_manifest(SKILL_NAME, _skill_version(), guard)},
               Path(a.out).expanduser().resolve().parent / Path(a.out).expanduser().name, a.fmt)
+    members = []
+    for i, row in enumerate(rows_out or [], 1):
+        volume = row.get("混凝土m3")
+        weight = round(float(volume) * 2.5, 2) if isinstance(volume, (int, float)) else None
+        members.append(cs.handoff_member(
+            "TUJIAN-%04d" % i,
+            weight_t=weight, length_m=None,
+            section=str(row.get("截面/尺寸") or ""),
+            grade=str(row.get("标号") or ""),
+            zone=str(a.floor_label or ""),
+            weight_basis=("total" if weight is not None else "unknown"),
+            weight_formula=("volume_m3*2.5" if weight is not None else ""),
+            quantity_m3=volume, quantity_basis="concrete_volume"))
+    cs.write_handoff(Path(a.out).expanduser().resolve().parent, a.floor_label,
+                     "concrete", guard, members)
     if op_naked or op_total:
         log(f"[洞口] 图面可算 {op_area}㎡（{len(op_items)} 处）+ 人工 {op_manual}㎡ → 板面积扣 {op_total}㎡；"
             f"另有 {op_naked} 个洞口只画不注尺寸（结构图常见，要扣用 --openings-m2）")
@@ -1652,7 +1782,15 @@ def cmd_floor(a):
     return 4 if (missing and not rows_out) else 0
 
 
-def main():
+def main(argv=None):
+    # --check-deps 必须在子命令解析前拦下：子解析器 required=True 会把
+    # `qty_core.py --check-deps` 当成"缺子命令"直接 exit 2，导致依赖体检
+    # 永远跑不到真正的检查逻辑（s5 实测）。
+    raw = list(sys.argv[1:] if argv is None else argv)
+    if "--check-deps" in raw:
+        status = cs.check_deps()
+        print(cs.format_deps(status))
+        return eg.dependency_exit_code()
     ap = argparse.ArgumentParser(description="土建算量：按层出混凝土方量与钢筋估算带")
     sub = ap.add_subparsers(dest="cmd", required=True)
     p = sub.add_parser("index"); p.add_argument("dwg"); p.add_argument("--cache-dir")
@@ -1660,6 +1798,8 @@ def main():
     p.add_argument("--no-geom", dest="with_geom", action="store_false")
     p.add_argument("--compare-baseline", dest="compare_baseline", default="",
                    help="基线 detail.json；给出后自动用 cad_compare.sh 输出图纸变化候选，不阻断出量")
+    p.add_argument("--allow-manual", action="store_true",
+                   help="允许消费手工 cad-contract/v1 契约；结果强制 final_quantity=false")
     p.set_defaults(func=cmd_index)
     p.add_argument("--keep-detail", dest="keep_detail", action="store_true",
                    help="保留解图明细 JSON（占空间大，重建索引时才用得上）")
@@ -1668,6 +1808,8 @@ def main():
     p.add_argument("--title-pattern")
     p.add_argument("--with-geom", dest="with_geom", action="store_true", default=True)
     p.add_argument("--no-geom", dest="with_geom", action="store_false")
+    p.add_argument("--allow-manual", action="store_true",
+                   help="允许消费手工 cad-contract/v1 契约；结果强制 final_quantity=false")
     p.set_defaults(func=cmd_floors)
     p.add_argument("--keep-detail", dest="keep_detail", action="store_true")
     p = sub.add_parser("floor"); p.add_argument("dwg"); p.add_argument("--floor-label", required=True)
@@ -1698,8 +1840,19 @@ def main():
     p.add_argument("--keep-detail", dest="keep_detail", action="store_true",
                    help="保留解图明细 JSON（默认建完索引就回收，一张 21.7MB 图能省 ~35MB）")
     p.add_argument("--no-auto-story", dest="auto_story", action="store_false")
+    p.add_argument("--allow-manual", action="store_true",
+                   help="允许消费手工 cad-contract/v1 契约；结果强制 final_quantity=false")
     p.set_defaults(func=cmd_floor, auto_story=True)
-    a = ap.parse_args()
+    ap.add_argument("--check-deps", action="store_true",
+                    help="只检查 cad-file-reader / lis-skill-bus / Python 前置，不读图纸")
+    a = ap.parse_args(raw)
+    # 入口闸门：缺 cad-file-reader / lis-skill-bus 先停；直接给图纸一律拒收。
+    try:
+        eg.require_reader()
+        eg.require_bus()
+        eg.reject_drawing_input(getattr(a, "dwg", None))
+    except eg.GateError as exc:
+        return eg.print_gate_error(exc)
     return a.func(a) or 0
 
 

@@ -41,10 +41,9 @@ def grade_in(text: str) -> str | None:
 
 def read_texts(dxf_path: Path) -> list[dict[str, Any]]:
     """读模型空间文字实体；块引用请先展开，否则表内文字会缺。"""
-    import ezdxf
-    from ezdxf.tools.text import plain_mtext
+    from dev_dxf import plain_mtext, readfile
 
-    document = ezdxf.readfile(str(dxf_path))
+    document = readfile(dxf_path)
     records: list[dict[str, Any]] = []
     for entity in document.modelspace():
         kind = entity.dxftype()

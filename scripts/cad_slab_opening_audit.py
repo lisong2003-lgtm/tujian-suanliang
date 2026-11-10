@@ -151,9 +151,9 @@ def _normalize_entities(
 
 
 def _read_entities(dxf_path: Path, layers: set[str]) -> list[dict[str, Any]]:
-    import ezdxf
+    from dev_dxf import readfile
 
-    document = ezdxf.readfile(str(dxf_path))
+    document = readfile(str(dxf_path))
     raw: list[dict[str, Any]] = []
     for entity in document.modelspace():
         layer = _text(entity.dxf.layer)

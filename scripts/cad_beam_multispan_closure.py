@@ -52,15 +52,10 @@ def _is_beam(layer: str) -> bool:
 
 def load_segments(dxf_path: Path) -> dict[str, list[dict[str, Any]]]:
     """只读 LINE，按方向、横向位置和沿轴区间归档。"""
-    try:
-        import ezdxf
-    except ModuleNotFoundError:
-        # 直接用 python3 调用脚本时补上技能内置 vendor
-        sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "vendor"))
-        import ezdxf
+    from dev_dxf import readfile
 
     buckets: dict[str, list[dict[str, Any]]] = {"beam": [], "support": []}
-    for entity in ezdxf.readfile(str(dxf_path)).modelspace():
+    for entity in readfile(dxf_path).modelspace():
         if entity.dxftype() != "LINE":
             continue
         layer = _text(entity.dxf.layer)

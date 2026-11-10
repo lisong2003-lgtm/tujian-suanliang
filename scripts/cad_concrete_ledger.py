@@ -86,7 +86,7 @@ def _polyline_points(entity: Any) -> list[tuple[float, float]]:
     if kind == "LWPOLYLINE":
         rows = list(entity.get_points("xyb"))
         if any(abs(float(row[2] or 0.0)) > 1e-9 for row in rows):
-            from ezdxf.path import make_path
+            from dev_dxf import make_path
 
             points = [
                 (float(vertex.x), float(vertex.y))
@@ -158,9 +158,9 @@ def _load_prefab_polygons(
         label_layer_pattern: str = r"S-PC-编号") -> list[dict[str, Any]]:
     if path is None:
         return []
-    import ezdxf
+    from dev_dxf import readfile
 
-    doc = ezdxf.readfile(path)
+    doc = readfile(path)
     tx, ty = transform
     polygons: list[dict[str, Any]] = []
     for entity in doc.modelspace():

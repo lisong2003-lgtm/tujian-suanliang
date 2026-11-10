@@ -410,9 +410,9 @@ def estimate_translation(anchor_dxf: Path,
 
 def _read_line_segments(path: Path, layer_pattern: str,
                         transform: tuple[float, float]) -> list[dict[str, Any]]:
-    import ezdxf
+    from dev_dxf import readfile
 
-    doc = ezdxf.readfile(str(path))
+    doc = readfile(str(path))
     pat = re.compile(layer_pattern, re.I)
     out: list[dict[str, Any]] = []
     tx, ty = transform
@@ -2206,9 +2206,9 @@ def _read_geometry_lines(path: Optional[Path],
                          transform: tuple[float, float]) -> list[dict[str, Any]]:
     if path is None:
         return []
-    import ezdxf
+    from dev_dxf import readfile
 
-    doc = ezdxf.readfile(str(path))
+    doc = readfile(str(path))
     layer_re = re.compile(layer_pattern, re.I)
     tx, ty = transform
     rows: list[dict[str, Any]] = []
@@ -2245,9 +2245,9 @@ def load_hatch_regions(
     regions: list[dict[str, Any]] = []
 
     if source.suffix.lower() == ".dxf":
-        import ezdxf
+        from dev_dxf import readfile
 
-        doc = ezdxf.readfile(str(source))
+        doc = readfile(str(source))
         for entity in doc.modelspace().query("HATCH"):
             layer = str(entity.dxf.layer or "")
             if not layer_re.search(layer):
@@ -2282,7 +2282,7 @@ def load_hatch_regions(
                              for value in _polygon_bbox(points)],
                 })
     elif source.suffix.lower() == ".dwg":
-        from ezdwg import raw
+        from dev_dxf import raw
 
         rows = list(raw.decode_hatch_entities(str(source)) or [])
         layer_names = dict(raw.decode_layer_names(str(source)) or [])
@@ -3060,9 +3060,9 @@ def write_dxf_overlay(out_path: Path,
                       slabs: list[dict[str, Any]],
                       support: dict[str, Any],
                       slab_diagnostics: Optional[dict[str, Any]] = None) -> None:
-    import ezdxf
+    from dev_dxf import new as new_dxf
 
-    doc = ezdxf.new("R2010")
+    doc = new_dxf("R2010")
     msp = doc.modelspace()
     layers = {
         "AUTO_MODEL_BEAM": 1,

@@ -66,9 +66,9 @@ def _normalize_entities(raw: list[dict[str, Any]], layers: set[str]) -> list[dic
 
 
 def _read_entities(dxf_path: Path, layers: set[str]) -> list[dict[str, Any]]:
-    import ezdxf
+    from dev_dxf import readfile
 
-    document = ezdxf.readfile(str(dxf_path))
+    document = readfile(str(dxf_path))
     raw: list[dict[str, Any]] = []
     for entity in document.modelspace():
         if _text(entity.dxf.layer) not in layers:

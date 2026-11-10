@@ -188,7 +188,7 @@ def aggregate_from_scan(scan: dict) -> dict:
 
     每个型号按直径归并，count=构件型数（标注次数口径，与 project_aggregate 的
     rebars.count 同义）；grade 从符号猜：Ⅲ/C→HRB400，B→HRB335，A/Φ→HPB300，
-    其余 unknown。适合 s5 产物直接喂口径B，无需回 read_cad/project_aggregate。
+    其余 unknown。适合 s5 产物直接喂口径B，无需回识图/聚合入口。
     """
     grades_map = [("Ⅲ", "HRB400"), ("C", "HRB400"), ("B", "HRB335"),
                   ("A", "HPB300"), ("Φ", "HPB300")]

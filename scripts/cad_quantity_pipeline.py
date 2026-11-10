@@ -589,6 +589,12 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> int:
     args = parse_args()
+    # s9 起：历史 advanced pipeline（本技能内展开 DXF 再建模）彻底停用，
+    # 不提供任何环境变量逃生。正式链路：cad-file-reader 出 cad-contract/v1 → qty_core.py。
+    print("[cad_quantity_pipeline] 历史 advanced pipeline 已删除（含直读层），没有逃生开关。\n"
+          "正式链路：cad-file-reader 产出 cad-contract/v1 → qty_core.py（本技能不解析 DWG/DXF）。",
+          file=sys.stderr)
+    return 23
     if not str(args.floor_label or "").strip():
         raise SystemExit("必须给 --floor-label，或在 --profile 项目配置里写 floor_label")
     dwg = Path(args.dwg).expanduser().resolve()

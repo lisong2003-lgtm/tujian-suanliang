@@ -11,8 +11,8 @@
   - 命中且契约包含可复用 detail 字段（text_records/geometry_segments）时，
     先把 detail.json / scan.json 落到 --out-dir，run_qty 建索引时会直接复用，
     不再调用底座重复解图。
-  - 未命中 / bus 缺失 / 契约不含可复用 detail → hit=false，不写文件、不报错，
-    run_qty 走本机正常解析。
+  - 未命中 / bus 缺失 / 契约不含可复用 detail → 写 hit=false 状态并 exit 2/3；
+    不再回退本机解图。
   - --require-core 为显式声明：土建的必选核心门槛（text_records + geometry_segments）
     默认已启用，该开关不改变行为，仅把核心口径显式暴露给调用方与文档。
   - 若 --out-dir/detail.json 已存在则不覆盖（幂等，保留已有解析）。
@@ -102,9 +102,14 @@ def _materialize(out_dir: Path, entry: dict) -> Path:
             "schema": entry.get("schema"),
             "contract_file": str(entry.get("source", {}).get("file", "")),
         }, ensure_ascii=False, indent=2), encoding="utf-8")
+        (out_dir / "contract.json").write_text(
+            json.dumps(entry, ensure_ascii=False, indent=1), encoding="utf-8")
         return status
     detail.write_text(json.dumps(c, ensure_ascii=False, indent=1), encoding="utf-8")
     (out_dir / "scan.json").write_text(json.dumps(c, ensure_ascii=False, indent=1), encoding="utf-8")
+    # 完整契约落盘：run_qty 直接把 contract.json 交给 qty_core
+    (out_dir / "contract.json").write_text(
+        json.dumps(entry, ensure_ascii=False, indent=1), encoding="utf-8")
     status = out_dir / "bus-pull-status.json"
     status.write_text(json.dumps({
         "hit": True, "reused": True,
@@ -139,7 +144,7 @@ def main(argv: list[str] | None = None) -> int:
                        ensure_ascii=False, indent=2), encoding="utf-8")
         print(json.dumps({"hit": False, "reason": result.get("reason", "无共享状态")},
                          ensure_ascii=False, indent=2))
-        return 0
+        return 2
     entry = result.get("entry") or {}
     ok, why = _usable(entry, args.min_texts)
     if not ok:
@@ -149,7 +154,7 @@ def main(argv: list[str] | None = None) -> int:
                        ensure_ascii=False, indent=2), encoding="utf-8")
         print(json.dumps({"hit": True, "usable": False, "reason": why, **core_info},
                          ensure_ascii=False, indent=2))
-        return 0
+        return 3
     status = _materialize(out_dir, entry)
     core_info = {"core_applied": True, "core_sections": ["text_records", "geometry_segments"]} if args.require_core else {}
     print(json.dumps({

@@ -1,5 +1,25 @@
 # Changelog
 
+## 0.9.44 · 2026-11-10 · S9 发布准备：版本收口
+
+- 版本 patch bump；同步套件最低版本。s9 发布准备。
+- **修复真图回归缺陷**：`floor` 不给 `--story-height-mm` 时，层高表若有「只标标高、没有层高列」的行，`story_from_table()` 的 `pairs.sort()` 会因元组第二轮为 `None` 抛 `TypeError`（真图已复现，exit 1）；改为只按标高排序。新增 `scripts/tests/test_story_from_table.py` 两项回归。
+
+## 0.9.43 · 2026-11-10 · 入口闸门 vendored + 历史直读层彻底删除
+
+- **新增 `scripts/entry_gate.py`**（与 `lis-skill-bus/lib/entry_gate.py` 同源 vendor）：`20/21/22/23/24` 固定退出码；`qty_core.py`、`run_qty.sh` 主入口接入，`--check-deps` 缺 reader 返回 `20`、缺 bus 返回 `21`。
+- **`dev_dxf.py` 改为停用桩**：不再 `import ezdwg/ezdxf`，任何调用抛 `DevDirectDisabled`；历史实现只在备份里。
+- **`cad_quantity_pipeline.py` 无逃生**：删除 `CAD_DEV_DXF=1` 开发开关，直接返回 `23` 并提示改走 `cad-contract/v1 → qty_core.py`；`cad_geometry.py` 迁移提示同步删除直读说法。
+- **SKILL.md** 新增退出码表与固定提示，删除 `CAD_ALLOW_DIRECT=1` 表述；`manifest.scripts` 登记 `scripts/entry_gate.py`。
+
+## 0.9.42 · 2026-11-09 · 接入 contract_guard 主门闸
+
+- **主入口闸门**：`qty_core.py` 先 `guard_contract` 再算量；手工契约缺 `--allow-manual` exit 3，`mode=manual` 强制 `final_quantity=false`、`formal_ledger_eligible=false`。
+- **删除技能内解析器**：`cad_geometry.py` 改为兼容薄壳，调用即提示迁移到 `cad-file-reader packs/structural-geometry` 并 exit 1；纯数学函数移到 `cad_geometry_math.py`。`run_qty.sh` 删除「无 bus 本机解图」分支，缺 bus/拉取失败 exit 1。
+- **新增**：`--check-deps`（缺依赖 exit 1 + 安装命令）、`site_handoff.json`（`specialty=concrete`，缺重量/坐标如实标注）、`provenance`/`run_manifest` 输出。
+- **manifest 统一**：`requires.skills={cad-file-reader>=0.41.0, lis-skill-bus>=0.1.11}`，`entry_policy=contract-only`；`scripts` 含 `contract_guard.py`、`contract_support.py`。
+- **验证**：`self_test.py` SELF_TEST_OK；`grep -rn "import ezdwg\|import ezdxf\|read_cad" scripts` 0 命中。
+
 ## 0.9.41 · 2026-11-09 · 常驻注入瘦身
 
 - **description 精简**：技能目录注入的 description 压到 ≤45 字，保留原有触发词与「不做什么」边界；SKILL.md 正文与算法口径未变。

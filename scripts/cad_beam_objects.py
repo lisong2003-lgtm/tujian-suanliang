@@ -89,8 +89,8 @@ def load_data(scan: Path, detail: Optional[Path]) -> dict[str, Any]:
 def load_expanded_dxf(path: Path, bbox: list[float],
                       margin: float, layer_pattern: str) -> list[dict[str, Any]]:
     """读取 cad_geometry 写出的展开 DXF，只保留目标图框范围与匹配图层。"""
-    import ezdxf
-    doc = ezdxf.readfile(str(path))
+    from dev_dxf import readfile
+    doc = readfile(str(path))
     msp = doc.modelspace()
     pat = re.compile(layer_pattern, re.I)
     x0, y0, x1, y1 = bbox
@@ -1286,9 +1286,9 @@ def support_intervals_at_line(
         layer_pattern: str = r"S-剪力墙|S-柱|S-剪力墙-边缘构件|砼墙",
         max_width: float = 1200.0) -> list[tuple[float, float]]:
     """沿梁中心线提取墙柱轮廓占用区间，用于支座节点提示。"""
-    import ezdxf
+    from dev_dxf import readfile
     pat = re.compile(layer_pattern, re.I)
-    doc = ezdxf.readfile(str(dxf_path))
+    doc = readfile(dxf_path)
     hs: list[tuple[float, float, float]] = []
     vs: list[tuple[float, float, float]] = []
     for e in doc.modelspace():
@@ -1348,8 +1348,8 @@ def support_intervals_at_line(
 
 def write_dxf_objects(out_path: Path, rows: list[dict[str, Any]],
                       bbox: list[float]) -> None:
-    import ezdxf
-    doc = ezdxf.new("R2010")
+    from dev_dxf import new as new_dxf
+    doc = new_dxf("R2010")
     msp = doc.modelspace()
     if "AUTO_BEAM_CENTER" not in doc.layers:
         doc.layers.add("AUTO_BEAM_CENTER", color=1)

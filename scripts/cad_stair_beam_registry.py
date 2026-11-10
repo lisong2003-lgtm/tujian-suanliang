@@ -618,7 +618,7 @@ def csv_lines(result: dict[str, Any]) -> list[list[str]]:
 def main() -> int:
     parser = argparse.ArgumentParser(description="建立独立楼梯梁台账")
     parser.add_argument("--dxf", required=True, help="楼梯平面/大样展开 DXF")
-    parser.add_argument("--scan", required=True, help="cad_scan/read_cad JSON")
+    parser.add_argument("--scan", required=True, help="cad-file-reader 识图契约 JSON")
     parser.add_argument("--detail", default=None, help="包含 text_records 的 detail JSON")
     parser.add_argument("--floor-label", default=None,
                         help="用于自动确定图框；未传时使用 --bbox")
